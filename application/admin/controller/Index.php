@@ -1,10 +1,61 @@
 <?php
 namespace app\admin\controller;
+use think\Db;
 
-class Index
+class Index extends Base
 {
     public function index()
     {
-        return '<style type="text/css">*{ padding: 0; margin: 0; } div{ padding: 4px 48px;} a{color:#2E5CD5;cursor: pointer;text-decoration: none} a:hover{text-decoration:underline; } body{ background: #fff; font-family: "Century Gothic","Microsoft yahei"; color: #333;font-size:18px;} h1{ font-size: 100px; font-weight: normal; margin-bottom: 12px; } p{ line-height: 1.6em; font-size: 42px }</style><div style="padding: 24px 48px;"> <h1>:)</h1><p> ThinkPHP V5<br/><span style="font-size:30px">十年磨一剑 - 为API开发设计的高性能框架</span></p><span style="font-size:22px;">[ V5.0 版本由 <a href="http://www.qiniu.com" target="qiniu">七牛云</a> 独家赞助发布 ]</span></div><script type="text/javascript" src="http://tajs.qq.com/stats?sId=9347272" charset="UTF-8"></script><script type="text/javascript" src="http://ad.topthink.com/Public/static/client.js"></script><thinkad id="ad_bd568ce7058a1091"></thinkad>';
+        $this->fetch('/index');
+    }
+    /**
+     * 管理后台首页
+     */
+    public function indePage()
+    {
+        //今日新增会员
+        $today = strtotime(date('Y-m-d 00:00:00'));
+        $map['create_time'] = array('egt', $today);
+        $member = Db::name('member')->where($map)->count();
+        $this->assign('member', $member);
+        $info = array(
+            'web_server' => $_SERVER['SERVER_SOFTWARE'],
+            'onload' => ini_get('upload_max_filesize'),
+            'think_v' => THINK_VERSION,
+            'phpversion' => phpversion()
+        );
+        $this->assign('info', $info);
+        return $this->fetch('index');
+    }
+    /**
+     * 修改密码
+     */
+    public function editPwd()
+    {
+        if (request()->isAjax()) {
+            $param = input('post.');
+            $user = Db::name('admin')->where('id=' . session('uid'))->find();
+            if (md5(md5($param['old_password']) . config('auth_key')) != $user['password']) {
+                return json(['code' => -1, 'url' => '', 'msg' => '旧密码错误']);
+            } else {
+                $pwd['password'] = md5(md5($param['password']) . config('auth_key'));
+                Db::name('admin')->where('id=' . $user['id'])->update($pwd);
+                session(null);
+                cache('db_config_data', null);//清除网站缓存配置
+                return json(['code' => 1, 'url' => 'index/index', 'msg' => '密码修改成功']);
+            }
+        }
+        return $this->fetch();
+    }
+    /**
+     * 清除缓存
+     */
+    public function clear()
+    {
+        if (delete_dir_file(CACHE_PATH) && delete_dir_file(TEMP_PATH)) {
+            return json(['code' => 1, 'msg' => '清除缓存成功']);
+        } else {
+            return json(['code' => 0, 'msg' => '清除缓存失败']);
+        }
     }
 }

@@ -12,7 +12,16 @@ class Sems extends Base
             $mobile = $param['mobile'];
             $tplCode = $param['tplCode'];
             $tplParam['code'] = $param['tplCode'];
-            $msgStatus=sendMsg
+            $msgStatus = sendMsg($mobile, $tplCode, $tplParam);
+            return json(['code' => $msgStatus['code'], 'msg' => $msgStatus['Message']]);
         }
+        return $this->fetch();
+    }
+    /**
+     * 生成二维码
+     */
+    public function qrcode()
+    {
+        return $this->fetch();
     }
 }
